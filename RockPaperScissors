@@ -1,0 +1,123 @@
+
+#SAMPLE ROCK-PAPER-SCISSORS GAME
+# Imports go at the top
+from microbit import *
+import radio
+
+rGroup = 2
+radio.config(group=rGroup)
+
+#CREATE CUSTOM IMAGES FOR 5X5 DISPLAY
+custIMAGES = {
+    'rock' : Image('00000:'
+                   '00800:'
+                   '08880:'
+                   '88888:'
+                   '88888'),
+    'paper' : Image('88888:'
+                    '88888:'
+                    '88888:'
+                    '88888:'
+                    '88888'),
+    'scissors' : Image('80008:'
+                       '08080:'
+                       '00800:'
+                       '88088:'
+                       '88088')
+
+}
+
+RPS = ['rock','paper','scissors']
+
+senValue = None
+recValue = None
+bPressed = None
+result = None
+
+cntr = -1
+radio.on()
+
+while True:
+    #ALWAYS SET TO LISTEN FOR INCOMING IMAGE
+    message = radio.receive()
+    if message:
+        recValue = message
+        print("<<<<< recived", recValue)
+        
+        if senValue == None:
+            print("nothing sent yet")
+ 
+    #USE THE PIN LOGO TO CHANGE THE RADIO GROUP
+    if pin_logo.is_touched():
+        rGroup += 1
+        sleep(500)
+        display.show(rGroup)
+        print(rGroup)
+        radio.off()
+        radio.config(group=rGroup)
+        radio.on()
+        #MADE THE RANGE SMALL SO YOU CAN LOOP QUICKLY
+        if rGroup > 5:
+            rGroup = 0
+        
+    #BUTTON A SETS THE IMAGE TO SEND (ROCK, PAPER, OR SCISSORS)
+    if button_a.is_pressed():
+        cntr += 1
+        print(cntr)
+        senValue = RPS[cntr]
+        display.show(custIMAGES[RPS[cntr]])
+        print(senValue, "loaded")
+        sleep(500)
+        if cntr > 1:
+            cntr = -1
+            
+    #BUTTON B ACTUALLY SENDS THE SLECTED IMAGE TO A LISTENING MICROBIT
+    if button_b.is_pressed():
+        print("button b")
+        bPressed = "true"
+        sleep(500)
+        #SEND NOTHING IF SEND IMAGE HAS NOT BEEN SET
+        if senValue == None:
+            print("choose pkg")
+            bPressed = None
+        else:
+            radio.send(senValue)
+            
+    #ONCE A SEND IMAGE IS SET AND SENT AND AN IMAGE IS RECEIVED, DETERMINE WINNER
+    if senValue != None and recValue != None and bPressed != None:           
+        print("[RadioGroup=", rGroup, "]")
+        print(">>>> sent", senValue)
+        print("[recived", recValue, "]")
+        if senValue == recValue:
+            print("tie")
+            print(senValue, " vs ", recValue, " = tie")
+            result = "T"
+        elif senValue == "rock" and recValue != "paper":
+            print("winner")
+            print("rock vs scissors = win")
+            result = "W"
+        elif senValue == "paper" and recValue != "scissors":
+            print("winner")
+            print("paper vs rock = win")
+            result = "W"
+        elif senValue == "scissors" and recValue != "rock":
+            print("winner")
+            print("scissors vs paper = win")
+            result = "W"
+        else:
+            print("loser")
+            print(senValue, " vs ", recValue, " = lose")
+            result = "L"
+        
+        #DISPLAY THE IMAGE RECEIVED AND THE RESULT
+        for i in range(1,3):
+           display.scroll(result)
+           display.show(custIMAGES[recValue])
+           sleep(2000)
+        
+        #RESET VARIABLES FOR NEXT GAME
+        display.show(result)
+        recValue = None
+        senValue = None
+        bPressed = None
+        
